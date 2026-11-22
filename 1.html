@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Harmonium & Piano</title>
+    <style>
+        :root {
+            --bg-color: #1e1e24;
+            --white-key: #ffffff;
+            --black-key: #2b2b2b;
+            --active-white: #e0e0e0;
+            --active-black: #4a4a4a;
+            --primary: #4CAF50;
+            --danger: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+
+        select, button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active { transform: scale(0.95); }
+        
+        button { background-color: var(--primary); color: white; }
+        button.recording { background-color: var(--danger); animation: pulse 1.5s infinite; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* Keyboard Layout */
+        .keyboard {
+            display: flex;
+            position: relative;
+            background: #111;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .key {
+            border: 1px solid #ccc;
+            border-radius: 0 0 5px 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 10px;
+            font-weight: bold;
+            color: #666;
+            transition: background-color 0.1s;
+        }
+
+        .white {
+            width: 60px;
+            height: 250px;
+            background-color: var(--white-key);
+            z-index: 1;
+        }
+
+        .white.active {
+            background-color: var(--active-white);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .black {
+            width: 40px;
+            height: 150px;
+            background-color: var(--black-key);
+            color: #aaa;
+            position: absolute;
+            z-index: 2;
+            margin-left: -20px;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .black.active {
+            background-color: var(--active-black);
+        }
+
+        /* Black key positioning based on an 8-white-key layout */
+        .black:nth-child(2) { left: 70px; }
+        .black:nth-child(4) { left: 130px; }
+        .black:nth-child(7) { left: 250px; }
+        .black:nth-child(9) { left: 310px; }
+        .black:nth-child(11) { left: 370px; }
+
+        #visualizer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1; /* Isko background mein bhej dega */
+            pointer-events: none; /* Mouse clicks ko block nahi karega */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="visualizer"></canvas>
+    <div class="header">
+        <h1>Web Harmonium & Piano</h1>
+        <p>Use your mouse or keyboard to play.</p>
+    </div>
+
+    <div class="controls">
+        <div>
+            <label for="instrument">Instrument: </label>
+            <select id="instrument">
+                <option value="piano">Piano</option>
+                <option value="harmonium">Harmonium</option>
+            </select>
+        </div>
+        <div>
+            <label for="volume">Volume: </label>
+            <input type="range" id="volume" min="0" max="1" step="0.1" value="0.5">
+        </div>
+        <div>
+            <label>BPM: </label>
+            <input type="number" id="bpm" value="120" min="40" max="200">
+        </div>
+        <button id="beatBtn">Start Beat</button>
+        <button id="recordBtn">⏺ Record</button>
+        <button id="playBtn" disabled>▶ Play Recording</button>
+    </div>
+
+    <div class="keyboard" id="keyboard">
+        <div class="key white" data-note="261.63" data-key="a">A</div>
+        <div class="key black" data-note="277.18" data-key="w">W</div>
+        <div class="key white" data-note="293.66" data-key="s">S</div>
+        <div class="key black" data-note="311.13" data-key="e">E</div>
+        <div class="key white" data-note="329.63" data-key="d">D</div>
+        <div class="key white" data-note="349.23" data-key="f">F</div>
+        <div class="key black" data-note="369.99" data-key="t">T</div>
+        <div class="key white" data-note="392.00" data-key="g">G</div>
+        <div class="key black" data-note="415.30" data-key="y">Y</div>
+        <div class="key white" data-note="440.00" data-key="h">H</div>
+        <div class="key black" data-note="466.16" data-key="u">U</div>
+        <div class="key white" data-note="493.88" data-key="j">J</div>
+        <div class="key white" data-note="523.25" data-key="k">K</div>
+    </div>
+
+    <script>
+        // Web Audio API setup
+        let audioCtx;
+        let analyser;
+        let dataArray;
+        const activeOscillators = {};
+        
+        // Recording State
+        let isRecording = false;
+        let recordingStartTime = 0;
+        let recordedNotes = [];
+        let playbackTimeouts = [];
+
+        // DOM Elements
+        let beatInterval = null;
+        const bpmInput = document.getElementById('bpm');
+        const beatBtn = document.getElementById('beatBtn');
+        const instrumentSelect = document.getElementById('instrument');
+        const recordBtn = document.getElementById('recordBtn');
+        const playBtn = document.getElementById('playBtn');
+        const keys = document.querySelectorAll('.key');
+
+        // Initialize Audio Context on first interaction to comply with browser policies
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        const initAudio = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Analyser setup for visualizer
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256; 
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                analyser.connect(audioCtx.destination);
+                
+                drawVisualizer(); // Visualizer loop start karo
+            }
+        };
+
+        // Sound Synthesis Logic
+        const playSound = (freq, isPlayback = false) => {
+            initAudio();
+            
+            // Avoid duplicate triggers for the same note
+            if (activeOscillators[freq]) return;
+
+            const inst = instrumentSelect.value;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(analyser);
+
+            if (inst === 'piano') {
+                osc.type = 'sine';
+                // START volume
+                gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
+                // SMOOTH decay (natural piano feel)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            } else if (inst === 'harmonium') {
+                osc.type = 'sawtooth'; // Buzzier tone for harmonium
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                // Harmonium swells slightly (attack) and sustains
+                gainNode.gain.linearRampToValueAtTime(volumeSlider.value, audioCtx.currentTime + 0.1); 
+            }
+
+            osc.frequency.value = freq;
+            osc.start();
+            activeOscillators[freq] = { osc, gainNode };
+
+            // Handle Recording
+            if (isRecording && !isPlayback) {
+                recordedNotes.push({
+                    type: 'start',
+                    freq: freq,
+                    time: Date.now() - recordingStartTime
+                });
+            }
+        };
+        
+        const volumeSlider = document.getElementById('volume');
+
+        const stopSound = (freq, isPlayback = false) => {
+            const note = activeOscillators[freq];
+            if (!note) return;
+
+            const { osc, gainNode } = note;
+            const inst = instrumentSelect.value;
+
+            if (inst === 'harmonium') {
+                // Harmonium stops when key is released (quick release envelope)
+                gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                setTimeout(() => osc.stop(), 100);
+            } else {
+                // Smooth release for piano
+                gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+
+            delete activeOscillators[freq];
+
+            // Handle Recording
+            if (isRecording && !isPlayback) {
+                recordedNotes.push({
+                    type: 'stop',
+                    freq: freq,
+                    time: Date.now() - recordingStartTime
+                });
+            }
+        };
+
+        // UI & Input Handling
+        const handleNoteStart = (freq, keyElement) => {
+            keyElement.classList.add('active');
+            playSound(freq);
+        };
+
+        const handleNoteStop = (freq, keyElement) => {
+            keyElement.classList.remove('active');
+            stopSound(freq);
+        };
+
+        // 1. Mouse Events
+        let isMouseDown = false;
+        document.body.addEventListener('mousedown', () => isMouseDown = true);
+        document.body.addEventListener('mouseup', () => isMouseDown = false);
+
+        keys.forEach(key => {
+            const freq = parseFloat(key.dataset.note);
+            
+            // Mouse support with drag (Glissando)
+            key.addEventListener('mousedown', () => handleNoteStart(freq, key));
+            key.addEventListener('mouseenter', () => {
+                if (isMouseDown) handleNoteStart(freq, key);
+            });
+            key.addEventListener('mouseleave', () => handleNoteStop(freq, key));
+            key.addEventListener('mouseup', () => handleNoteStop(freq, key));
+            
+            // Touch support for mobile (Tumhara original code)
+            key.addEventListener('touchstart', (e) => { e.preventDefault(); handleNoteStart(freq, key); });
+            key.addEventListener('touchend', (e) => { e.preventDefault(); handleNoteStop(freq, key); });
+        });
+        
+        // 2. Keyboard Events
+        const keyMap = {};
+        keys.forEach(key => {
+            keyMap[key.dataset.key.toLowerCase()] = {
+                freq: parseFloat(key.dataset.note),
+                element: key
+            };
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return; // Ignore sustained key presses
+            const noteData = keyMap[e.key.toLowerCase()];
+            if (noteData) handleNoteStart(noteData.freq, noteData.element);
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const noteData = keyMap[e.key.toLowerCase()];
+            if (noteData) handleNoteStop(noteData.freq, noteData.element);
+        });
+
+        // Recording Feature Logic
+        recordBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                // Start Recording
+                isRecording = true;
+                recordedNotes = [];
+                recordingStartTime = Date.now();
+                recordBtn.textContent = '⏹ Stop Recording';
+                recordBtn.classList.add('recording');
+                playBtn.disabled = true;
+            } else {
+                // Stop Recording
+                isRecording = false;
+                recordBtn.textContent = '⏺ Record';
+                recordBtn.classList.remove('recording');
+                if (recordedNotes.length > 0) playBtn.disabled = false;
+            }
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (recordedNotes.length === 0) return;
+            
+            // Stop any current playback
+            playbackTimeouts.forEach(clearTimeout);
+            playbackTimeouts = [];
+
+            // Playback notes
+            recordedNotes.forEach(event => {
+                const timeout = setTimeout(() => {
+                    const keyData = Object.values(keyMap).find(k => k.freq === event.freq);
+                    if (event.type === 'start') {
+                        if (keyData) keyData.element.classList.add('active');
+                        playSound(event.freq, true);
+                    } else {
+                        if (keyData) keyData.element.classList.remove('active');
+                        stopSound(event.freq, true);
+                    }
+                }, event.time);
+                playbackTimeouts.push(timeout);
+            });
+        });
+        beatBtn.addEventListener('click', () => {
+            if (beatInterval) {
+                // Stop beat
+                clearInterval(beatInterval);
+                beatInterval = null;
+                beatBtn.textContent = "Start Beat";
+            } else {
+                // Start beat
+                const bpm = parseInt(bpmInput.value);
+                beatInterval = setInterval(() => {
+                    playClickSound();
+                }, 60000 / bpm);
+            beatBtn.textContent = "Stop Beat";
+            }
+        });
+        function playClickSound() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 1000; // tick sound
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+        // Visualizer Drawing Function
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            analyser.getByteFrequencyData(dataArray);
+
+            // Canvas ko clear karo (transparent background)
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] * 1.5;
+
+                // Color generate karna (Greenish-Blue theme for your UI)
+                const r = barHeight + (25 * (i / bufferLength));
+                const g = 250 * (i / bufferLength);
+                const b = 150;
+
+                canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
+                
+                // Niche se upar ki taraf bars draw karo
+                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+    </script>
+</body>
+</html>
