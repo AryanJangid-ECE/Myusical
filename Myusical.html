@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayWeb - Premium</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+
+        :root {
+            --bg-dark: #0f1015;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #00e5ff;
+            --primary-hover: #00b8cc;
+            --danger: #ff3366;
+            --white-key: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+            --black-key: linear-gradient(to bottom, #333333 0%, #111111 100%);
+            --active-white: linear-gradient(to bottom, #e0f7fa 0%, #b2ebf2 100%);
+            --active-black: linear-gradient(to bottom, #1a1a1a 0%, #000000 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #2a2a35 0%, var(--bg-dark) 80%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden; 
+            user-select: none;
+        }
+
+        .container {
+            position: relative; 
+            overflow: hidden; /* Bars ko bahar jaane se rokega */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        /* NAYI GLASS LAYER JO BLUR WAPAS LAYEGI */
+        .glass-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 0; /* Bars ke upar, buttons ke neeche */
+        }
+
+        #visualizer {
+            position: absolute; 
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%;
+            z-index: -1; /* Sabse peeche */
+            opacity: 0.9; 
+        }
+
+        /* Content ko aage laane ke liye z-index */
+        .header, .controls, .keyboard {
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+        }
+
+        .header p {
+            color: #ccc;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* Controls Area */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+
+        select, input[type="number"] {
+            background: transparent;
+            color: white;
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select option {
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            text-align: center;
+        }
+
+        input[type="range"] {
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        button {
+            padding: 0.7rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+
+        #beatBtn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #beatBtn:hover { background-color: rgba(255, 255, 255, 0.2); }
+
+        #recordBtn {
+            background-color: rgba(0,0,0,0.4);
+            border: 1px solid var(--danger);
+            color: #fff;
+        }
+        #recordBtn:hover {
+            background-color: rgba(255, 51, 102, 0.15);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+        }
+
+        button.recording {
+            background-color: var(--danger) !important;
+            color: white !important;
+            animation: pulseRecord 1.5s infinite;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+        }
+
+        #playBtn {
+            background-color: var(--primary);
+            color: #000;
+            font-weight: 700;
+        }
+        #playBtn:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+        }
+        #playBtn:disabled {
+            background-color: #333;
+            color: #777;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        @keyframes pulseRecord {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* 3D Keyboard Layout */
+        .keyboard {
+            display: flex;
+            position: relative;
+            background: #111;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .key {
+            border-radius: 0 0 6px 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 15px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.1s ease;
+            box-shadow: 0 8px 10px rgba(0,0,0,0.3);
+        }
+
+        .white {
+            width: 65px;
+            height: 260px;
+            background: var(--white-key);
+            color: #888;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 1;
+            margin: 0 1px;
+        }
+
+        .white.active {
+            background: var(--active-white);
+            color: #000;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.4);
+            transform: translateY(2px);
+        }
+
+        .black {
+            width: 42px;
+            height: 160px;
+            background: var(--black-key);
+            color: #666;
+            position: absolute;
+            z-index: 2;
+            margin-left: -21px;
+            border: 1px solid #000;
+            border-top: none;
+            box-shadow: 2px 5px 10px rgba(0,0,0,0.5), inset 0px 1px 0px #555;
+        }
+
+        .black.active {
+            background: var(--active-black);
+            color: var(--primary);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+            transform: translateY(2px);
+        }
+
+        /* Precise Black key positioning */
+        .black:nth-child(2) { left: 80px; }
+        .black:nth-child(4) { left: 147px; }
+        .black:nth-child(7) { left: 281px; }
+        .black:nth-child(9) { left: 348px; }
+        .black:nth-child(11) { left: 415px; }
+
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <canvas id="visualizer"></canvas> 
+        <div class="glass-bg"></div>
+        
+        <div class="header">
+            <h1>PlayWeb</h1>
+            <p>Play, Record, and Visualize your music</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="instrument">Instrument:</label>
+                <select id="instrument">
+                    <option value="piano">Piano</option>
+                    <option value="harmonium">Harmonium</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="volume">Volume:</label>
+                <input type="range" id="volume" min="0" max="1" step="0.1" value="0.5">
+            </div>
+            <div class="control-group">
+                <label>BPM:</label>
+                <input type="number" id="bpm" value="120" min="40" max="200">
+            </div>
+            
+            <button id="beatBtn">🎵 Start Beat</button>
+            <button id="recordBtn">⏺ Record</button>
+            <button id="playBtn" disabled>▶ Play</button>
+        </div>
+
+        <div class="keyboard" id="keyboard">
+            <div class="key white" data-note="261.63" data-key="a">A</div>
+            <div class="key black" data-note="277.18" data-key="w">W</div>
+            <div class="key white" data-note="293.66" data-key="s">S</div>
+            <div class="key black" data-note="311.13" data-key="e">E</div>
+            <div class="key white" data-note="329.63" data-key="d">D</div>
+            <div class="key white" data-note="349.23" data-key="f">F</div>
+            <div class="key black" data-note="369.99" data-key="t">T</div>
+            <div class="key white" data-note="392.00" data-key="g">G</div>
+            <div class="key black" data-note="415.30" data-key="y">Y</div>
+            <div class="key white" data-note="440.00" data-key="h">H</div>
+            <div class="key black" data-note="466.16" data-key="u">U</div>
+            <div class="key white" data-note="493.88" data-key="j">J</div>
+            <div class="key white" data-note="523.25" data-key="k">K</div>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio API setup
+        let audioCtx;
+        let analyser;
+        let dataArray;
+        const activeOscillators = {};
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioDestination;
+        // Recording State
+        let isRecording = false;
+        let recordingStartTime = 0;
+        let recordedNotes = [];
+        let playbackTimeouts = [];
+
+        // DOM Elements
+        let beatInterval = null;
+        const bpmInput = document.getElementById('bpm');
+        const beatBtn = document.getElementById('beatBtn');
+        const instrumentSelect = document.getElementById('instrument');
+        const recordBtn = document.getElementById('recordBtn');
+        const playBtn = document.getElementById('playBtn');
+        const keys = document.querySelectorAll('.key');
+
+        // Initialize Audio Context on first interaction to comply with browser policies
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        const uiContainer = document.querySelector('.container'); 
+
+        canvas.width = uiContainer.clientWidth;
+        canvas.height = uiContainer.clientHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = uiContainer.clientWidth;
+            canvas.height = uiContainer.clientHeight;
+        });
+
+        const initAudio = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+                // Analyser setup
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256; 
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                analyser.connect(audioCtx.destination);
+        
+                // NAYA: MediaStreamDestination banayein recording ke liye
+                audioDestination = audioCtx.createMediaStreamDestination();
+                analyser.connect(audioDestination); // Audio destination ko bhi bhejein
+        
+                drawVisualizer(); 
+            }
+        };
+
+        // Sound Synthesis Logic
+        const playSound = (freq, isPlayback = false) => {
+            initAudio();
+            
+            if (activeOscillators[freq]) return;
+
+            const inst = instrumentSelect.value;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(analyser);
+
+            if (inst === 'piano') {
+                osc.type = 'sine';
+                gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            } else if (inst === 'harmonium') {
+                osc.type = 'sawtooth'; 
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(volumeSlider.value, audioCtx.currentTime + 0.1); 
+            }
+
+            osc.frequency.value = freq;
+            osc.start();
+            activeOscillators[freq] = { osc, gainNode };
+
+            if (isRecording && !isPlayback) {
+                recordedNotes.push({
+                    type: 'start',
+                    freq: freq,
+                    time: Date.now() - recordingStartTime
+                });
+            }
+        };
+        
+        const volumeSlider = document.getElementById('volume');
+
+        const stopSound = (freq, isPlayback = false) => {
+            const note = activeOscillators[freq];
+            if (!note) return;
+
+            const { osc, gainNode } = note;
+            const inst = instrumentSelect.value;
+
+            if (inst === 'harmonium') {
+                gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                setTimeout(() => osc.stop(), 100);
+            } else {
+                gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+
+            delete activeOscillators[freq];
+
+            if (isRecording && !isPlayback) {
+                recordedNotes.push({
+                    type: 'stop',
+                    freq: freq,
+                    time: Date.now() - recordingStartTime
+                });
+            }
+        };
+
+        // UI & Input Handling
+        const handleNoteStart = (freq, keyElement) => {
+            keyElement.classList.add('active');
+            playSound(freq);
+        };
+
+        const handleNoteStop = (freq, keyElement) => {
+            keyElement.classList.remove('active');
+            stopSound(freq);
+        };
+
+        let isMouseDown = false;
+        document.body.addEventListener('mousedown', () => isMouseDown = true);
+        document.body.addEventListener('mouseup', () => isMouseDown = false);
+
+        keys.forEach(key => {
+            const freq = parseFloat(key.dataset.note);
+            
+            key.addEventListener('mousedown', () => handleNoteStart(freq, key));
+            key.addEventListener('mouseenter', () => {
+                if (isMouseDown) handleNoteStart(freq, key);
+            });
+            key.addEventListener('mouseleave', () => handleNoteStop(freq, key));
+            key.addEventListener('mouseup', () => handleNoteStop(freq, key));
+            
+            key.addEventListener('touchstart', (e) => { e.preventDefault(); handleNoteStart(freq, key); });
+            key.addEventListener('touchend', (e) => { e.preventDefault(); handleNoteStop(freq, key); });
+        });
+        
+        const keyMap = {};
+        keys.forEach(key => {
+            keyMap[key.dataset.key.toLowerCase()] = {
+                freq: parseFloat(key.dataset.note),
+                element: key
+            };
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return; 
+            const noteData = keyMap[e.key.toLowerCase()];
+            if (noteData) handleNoteStart(noteData.freq, noteData.element);
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const noteData = keyMap[e.key.toLowerCase()];
+            if (noteData) handleNoteStop(noteData.freq, noteData.element);
+        });
+
+        // Recording
+        recordBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                // Start Recording
+                initAudio(); // Ensure audio context is running
+                isRecording = true;
+                recordedNotes = [];
+                audioChunks = []; // Purana audio clear karein
+                recordingStartTime = Date.now();
+        
+                // MediaRecorder Start
+                mediaRecorder = new MediaRecorder(audioDestination.stream);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+        
+                // Jab recording stop ho, toh file backend pe bhejein
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    saveAudioToBackend(audioBlob); // Naya function call
+                };
+        
+                mediaRecorder.start();
+
+                recordBtn.innerHTML = '⏹ Stop Recording';
+                recordBtn.classList.add('recording');
+                playBtn.disabled = true;
+            } else {
+                // Stop Recording
+                isRecording = false;
+                mediaRecorder.stop(); // Ise call karne se onstop trigger hoga
+                
+                recordBtn.innerHTML = '⏺ Record';
+                recordBtn.classList.remove('recording');
+                if (recordedNotes.length > 0) playBtn.disabled = false;
+            }
+        });
+
+        // Naya function: Backend pe bhejne ke liye
+        function saveAudioToBackend(audioBlob) {
+            // Ek form data banayein
+            const formData = new FormData();
+            // File ka naam generate karein (jaise: recording-123456.webm)
+            const fileName = `recording-${Date.now()}.webm`;
+            formData.append('audio', audioBlob, fileName);
+
+            // Backend API ko POST request bhejein
+            fetch('http://localhost:3000/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('Recording saved to server successfully! 🎵');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to save recording.');
+            });
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (recordedNotes.length === 0) return;
+            
+            playbackTimeouts.forEach(clearTimeout);
+            playbackTimeouts = [];
+
+            recordedNotes.forEach(event => {
+                const timeout = setTimeout(() => {
+                    const keyData = Object.values(keyMap).find(k => k.freq === event.freq);
+                    if (event.type === 'start') {
+                        if (keyData) keyData.element.classList.add('active');
+                        playSound(event.freq, true);
+                    } else {
+                        if (keyData) keyData.element.classList.remove('active');
+                        stopSound(event.freq, true);
+                    }
+                }, event.time);
+                playbackTimeouts.push(timeout);
+            });
+        });
+
+        beatBtn.addEventListener('click', () => {
+            if (beatInterval) {
+                clearInterval(beatInterval);
+                beatInterval = null;
+                beatBtn.innerHTML = "🎵 Start Beat";
+            } else {
+                const bpm = parseInt(bpmInput.value);
+                beatInterval = setInterval(() => {
+                    playClickSound();
+                }, 60000 / bpm);
+            beatBtn.innerHTML = "⏹ Stop Beat";
+            }
+        });
+
+        function playClickSound() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 1000; 
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        // Visualizer
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            analyser.getByteFrequencyData(dataArray);
+
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] * 2; 
+
+                const r = barHeight + (25 * (i / bufferLength));
+                const g = 200 * (i / bufferLength) + 50;
+                const b = 255;
+
+                canvasCtx.fillStyle = `rgba(${r},${g},${b}, 0.8)`; 
+                
+                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+    </script>
+</body>
+</html>
